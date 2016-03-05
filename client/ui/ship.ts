@@ -4,6 +4,11 @@ import game, { log, socket } from "../index";
 import * as upgrades from "../../server/upgrades";
 
 export function setup() {
+  if (game.ship != null) {
+    ui.getPane("ship").hidden = false;
+    refresh();
+  }
+
   // Network
   socket.on("shipScannerResults", onShipScannerResults);
   socket.on("shipCourseTargetReached", onShipCourseTargetReached);
@@ -105,6 +110,7 @@ function onSetShipPosition(pos: XYZ) {
 function onShipScannerResults(data: Game.ScannedObject[]) {
   log(`Scan successful! ${data.length} objects located in a 100 units radius.`);
 
+  game.ship.scanner.timer = null;
   game.ship.scanner.data = data;
   refreshScanner();
 }

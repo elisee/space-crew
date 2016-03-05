@@ -1,7 +1,8 @@
+import * as login from "./login";
 import * as crew from "./crew";
 import * as ship from "./ship";
 import * as planet from "./planet";
-export { crew, ship, planet };
+export { login, crew, ship, planet };
 
 export function getPane(name: string) { return document.querySelector(`body > main > .${name}`) as HTMLDivElement; }
 export function getButton(name: string) { return document.querySelector(`button.${name}`) as HTMLButtonElement; }

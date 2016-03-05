@@ -2,7 +2,15 @@ import game, { log, socket } from "../index";
 import * as ui from "./index";
 
 export function setup() {
+  if (localStorage["gameShipId"] != null) ui.getInput("ship-id").value = localStorage["gameShipId"];
+  if (localStorage["gameShipKey"] != null) ui.getInput("ship-key").value = localStorage["gameShipKey"];
+
   ui.getButton("enter-ship").addEventListener("click", onEnterShipClick);
+
+  if (game.planet != null) {
+    ui.getPane("planet").hidden = false;
+    ui.planet.refresh();
+  }
 }
 
 export function refresh() {
@@ -31,8 +39,8 @@ function onEnterShipClick(event: MouseEvent) {
     ui.crew.refresh();
   };
 
-  const shipId = ui.getValue("ship-id");
-  const key = ui.getValue("ship-key");
+  const shipId = localStorage["gameShipId"] = ui.getValue("ship-id");
+  const key = localStorage["gameShipKey"] = ui.getValue("ship-key");
 
   socket.emit("enterShip", shipId, key, onEnterShipAck);
 }

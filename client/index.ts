@@ -26,13 +26,13 @@ export function log(message: string) {
 
 let tickIntervalId: NodeJS.Timer;
 
-ui.getInput("server-host").value = window.location.host;
+ui.getInput("server-host").value = (localStorage["gameServerHost"] != null) ? localStorage["gameServerHost"] : window.location.host;
 ui.getButton("connect").addEventListener("click", onConnectClick);
 
 function onConnectClick(event: MouseEvent) {
   event.preventDefault();
 
-  const host = ui.getValue("server-host");
+  const host = localStorage["gameServerHost"] = ui.getValue("server-host");
   socket = io.connect(host, { reconnection: false });
 
   log(`Connecting to ${host}...`);
@@ -46,8 +46,7 @@ function onConnected() {
   log("Connected!");
   ui.getPane("log-in").hidden = false;
 
-  ui.getButton("create-crew").addEventListener("click", onCreateCrewClick);
-  ui.getButton("return-to-crew").addEventListener("click", onReturnToCrewClick);
+  ui.login.setup();
 }
 
 function onDisconnected() {
@@ -56,68 +55,13 @@ function onDisconnected() {
   tickIntervalId = null;
 }
 
-function onCreateCrewClick(event: MouseEvent) {
-  event.preventDefault();
-
-  const shipName = ui.getValue("ship-name");
-  const captainName = ui.getValue("captain-name");
-
-  const onCreateCrewAck: Game.CreateCrewCallback = (err, result) => {
-    if (err != null) {
-      log(`Error while creating crew: ${err}.`);
-      ui.getPane("log-in").hidden = false;
-      return;
-    }
-
-    log(`Crew created! ID is ${result.crew.id}, key is ${result.crewKey}.`);
-    log(`Ship ID is ${result.ship.id}, key is ${result.shipKey}.`);
-    log(`Save those for future use!`);
-
-    game.crew = result.crew;
-    game.ship = result.ship;
-    crewDone();
-  };
-
-  socket.emit("createCrew", shipName, captainName, onCreateCrewAck);
-  ui.getPane("log-in").hidden = true;
-}
-
-function onReturnToCrewClick(event: MouseEvent) {
-  event.preventDefault();
-
-  const crewId = ui.getValue("crew-id");
-  const crewKey = ui.getValue("crew-key");
-
-  const onReturnToCrewAck: Game.ReturnToCrewCallback = (err, result) => {
-    if (err != null) {
-      log(`Error while returning to crew: ${err}.`);
-      ui.getPane("log-in").hidden = false;
-      return;
-    }
-
-    game.crew = result.crew;
-    game.ship = result.ship;
-    game.planet = result.planet;
-
-    crewDone();
-  };
-
-  socket.emit("returnToCrew", crewId, crewKey, onReturnToCrewAck);
-  ui.getPane("log-in").hidden = true;
-}
-
-function crewDone() {
+export function loginDone() {
   ui.getPane("crew").hidden = false;
   ui.crew.refresh();
 
   ui.crew.setup();
   ui.ship.setup();
   ui.planet.setup();
-
-  if (game.ship != null) {
-    ui.getPane("ship").hidden = false;
-    ui.ship.refresh();
-  }
 
   tickIntervalId = setInterval(tick, 1000);
 }
