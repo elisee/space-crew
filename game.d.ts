@@ -27,8 +27,12 @@ declare namespace Game {
     id: string;
     location: {
       // Only one of those can be set
-      planetId?: string;
       shipId?: string;
+
+      planet?: {
+        id: string;
+        place: string;
+      }
     };
 
     members: {
@@ -66,11 +70,11 @@ declare namespace Game {
     (err: string, planet?: Planet): void;
   }
 
-  interface LeaveShipCallback {
+  interface SpaceportExitShipCallback {
     (err: string): void;
   }
 
-  interface EnterShipCallback {
+  interface SpaceportEnterShipCallback {
     (err: string, ship?: Ship): void;
   }
 

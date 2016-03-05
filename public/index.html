@@ -60,7 +60,6 @@
         <header>Actions</header>
         <button class="land-ship">Land ship</button>
         <button class="take-off-ship">Take off ship</button>
-        <button class="leave-ship">Leave ship</button>
       </form>
 
       <form class="scanner">
@@ -89,14 +88,32 @@
         <div class="position">Coordinates: <span></span></div>
       </form>
       <form>
-        <header>Enter a ship</header>
-        <input type="text" class="ship-id" placeholder="Ship ID" />
-        <input type="text" class="ship-key" placeholder="Key" />
-        <button class="enter-ship">Enter ship</button>
+        <header>Places</header>
+        <table>
+          <tr>
+            <th>Place</th>
+            <th></th>
+          </tr>
+          <tr>
+            <td>Spaceport</td>
+            <td><button disabled>Go</button></td>
+          </tr>
+        </table>
       </form>
       <form>
-        <header>Places</header>
-        
+        <header>Spaceport</header>
+        <div class="ship-list">
+          <div class="count">There are <span></span> ships parked.</div>
+          <ul></ul>
+        </div>
+        <div class="exit-ship">
+          <button>Exit ship</button>
+        </div>
+        <div class="enter-ship">
+          <input type="text" class="ship-id" placeholder="Ship ID" />
+          <input type="text" class="ship-key" placeholder="Key" />
+          <button>Enter ship</button>
+        </div>
       </form>
     </div>
   </main>

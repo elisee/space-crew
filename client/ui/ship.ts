@@ -10,22 +10,23 @@ export function setup() {
   }
 
   // Network
-  socket.on("shipScannerResults", onShipScannerResults);
-  socket.on("shipCourseTargetReached", onShipCourseTargetReached);
-  socket.on("setShipPosition", onSetShipPosition);
+  socket.on("ship.scannerResults", onScannerResults);
+  socket.on("ship.courseTargetReached", onCourseTargetReached);
+  socket.on("ship.setPosition", onSetPosition);
 
   // UI events
-  ui.getButton("land-ship").addEventListener("click", onLandShipClick);
-  ui.getButton("take-off-ship").addEventListener("click", onTakeOffShipClick);
-  ui.getButton("leave-ship").addEventListener("click", onLeaveShipClick);
+  ui.getButton("land-ship").addEventListener("click", onLandClick);
+  ui.getButton("take-off-ship").addEventListener("click", onTakeOffClick);
 
-  ui.getButton("use-ship-scanner").addEventListener("click", onUseShipScannerClick);
+  ui.getButton("use-ship-scanner").addEventListener("click", onUseScannerClick);
 
-  ui.getButton("set-ship-course").addEventListener("click", onSetShipCourseClick);
+  ui.getButton("set-ship-course").addEventListener("click", onSetCourseClick);
 
 }
 
 export function tick() {
+  if (game.ship == null) return;
+
   if (game.ship.scanner.timer != null) {
     game.ship.scanner.timer = Math.max(game.ship.scanner.timer - 1, 0);
     refreshScannerTimer();
@@ -58,7 +59,6 @@ export function refreshActions() {
 
   ui.getButton("land-ship").disabled = hasLanded;
   ui.getButton("take-off-ship").disabled = !hasLanded;
-  ui.getButton("leave-ship").disabled = !hasLanded;
 }
 
 function refreshScanner() {
@@ -96,19 +96,19 @@ function refreshScannerData() {
 }
 
 // Network
-function onShipCourseTargetReached() {
+function onCourseTargetReached() {
   log("Ship course target reached!");
 
   game.ship.course = null;
   ui.ship.refreshStatus();
 }
 
-function onSetShipPosition(pos: XYZ) {
+function onSetPosition(pos: XYZ) {
   game.ship.position = pos;
   ui.ship.refreshStatus();
 }
 
-function onShipScannerResults(data: Game.ScannedObject[]) {
+function onScannerResults(data: Game.ScannedObject[]) {
   log(`Scan successful! ${data.length} objects located in a 100 units radius.`);
 
   game.ship.scanner.timer = null;
@@ -117,10 +117,10 @@ function onShipScannerResults(data: Game.ScannedObject[]) {
 }
 
 // UI events
-function onUseShipScannerClick(event: MouseEvent) {
+function onUseScannerClick(event: MouseEvent) {
   event.preventDefault();
 
-  const onScanPlanetsAck: Game.UseShipScannerCallback = (err) => {
+  const onShipUseScannerAck: Game.UseShipScannerCallback = (err) => {
     ui.getButton("use-ship-scanner").disabled = false;
 
     if (err != null) {
@@ -135,10 +135,10 @@ function onUseShipScannerClick(event: MouseEvent) {
 
   log("Scanning nearby objects...");
   ui.getButton("use-ship-scanner").disabled = true;
-  socket.emit("useShipScanner", onScanPlanetsAck);
+  socket.emit("ship.useScanner", onShipUseScannerAck);
 }
 
-function onSetShipCourseClick(event: MouseEvent) {
+function onSetCourseClick(event: MouseEvent) {
   event.preventDefault();
 
   const [ x, y, z ] = ui.getValue("ship-course-target").split(",").map((v) => parseInt(v, 10));
@@ -156,10 +156,10 @@ function onSetShipCourseClick(event: MouseEvent) {
   };
 
   log(`Setting course for (${x},${y},${z})`);
-  socket.emit("setShipCourse", target, onSetShipCourseAck);
+  socket.emit("ship.setCourse", target, onSetShipCourseAck);
 }
 
-function onLandShipClick(event: MouseEvent) {
+function onLandClick(event: MouseEvent) {
   event.preventDefault();
 
   const onLandShipAck: Game.LandShipCallback = (err, planet) => {
@@ -173,12 +173,15 @@ function onLandShipClick(event: MouseEvent) {
     game.planet = planet;
     game.ship.planetId = planet.id;
     ui.ship.refresh();
+
+    ui.getPane("planet").hidden = false;
+    ui.planet.refresh();
   };
 
-  socket.emit("landShip", onLandShipAck);
+  socket.emit("ship.land", onLandShipAck);
 }
 
-function onTakeOffShipClick(event: MouseEvent) {
+function onTakeOffClick(event: MouseEvent) {
   event.preventDefault();
 
   const onTakeOffShipAck: Game.TakeOffShipCallback = (err) => {
@@ -192,29 +195,9 @@ function onTakeOffShipClick(event: MouseEvent) {
     game.planet = null;
     game.ship.planetId = null;
     ui.ship.refresh();
+
+    ui.getPane("planet").hidden = true;
   };
 
-  socket.emit("takeOffShip", onTakeOffShipAck);
-}
-
-function onLeaveShipClick(event: MouseEvent) {
-  event.preventDefault();
-
-  const onLeaveShipAck: Game.LeaveShipCallback = (err) => {
-    if (err != null) {
-      log(`Error while leaving ship: ${err}.`);
-      return;
-    }
-
-    game.ship = null;
-    ui.getPane("ship").hidden = true;
-    log("Left the ship.");
-
-    ui.crew.refreshStatus();
-
-    ui.getPane("planet").hidden = false;
-    ui.planet.refresh();
-  };
-
-  socket.emit("leaveShip", onLeaveShipAck);
+  socket.emit("ship.takeOff", onTakeOffShipAck);
 }

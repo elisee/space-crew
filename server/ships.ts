@@ -36,10 +36,10 @@ export function tick() {
 function advanceCourse(ship: ServerGame.Ship) {
   if (isSamePosition(ship.pub.position, ship.pub.course.target)) {
     ship.pub.course = null;
-    io.in(`ship:${ship.pub.id}`).emit("shipCourseTargetReached");
+    io.in(`ship:${ship.pub.id}`).emit("ship.courseTargetReached");
   } else {
     moveTowards(ship.pub.position, ship.pub.course.target);
-    io.in(`ship:${ship.pub.id}`).emit("setShipPosition", ship.pub.position);
+    io.in(`ship:${ship.pub.id}`).emit("ship.setPosition", ship.pub.position);
   }
 }
 
@@ -58,6 +58,6 @@ function runScan(ship: ServerGame.Ship) {
       });
     }
 
-    io.in(`ship:${ship.pub.id}`).emit("shipScannerResults", nearbyObjects);
+    io.in(`ship:${ship.pub.id}`).emit("ship.scannerResults", nearbyObjects);
   }
 }

@@ -5,9 +5,10 @@ export function setup() {
   if (localStorage["gameShipId"] != null) ui.getInput("ship-id").value = localStorage["gameShipId"];
   if (localStorage["gameShipKey"] != null) ui.getInput("ship-key").value = localStorage["gameShipKey"];
 
-  ui.getButton("enter-ship").addEventListener("click", onEnterShipClick);
+  document.querySelector(".exit-ship button").addEventListener("click", onSpaceportExitShipclick);
+  document.querySelector(".enter-ship button").addEventListener("click", onSpaceportEnterShipClick);
 
-  if (game.ship == null && game.planet != null) {
+  if (game.planet != null) {
     ui.getPane("planet").hidden = false;
     ui.planet.refresh();
   }
@@ -15,6 +16,7 @@ export function setup() {
 
 export function refresh() {
   refreshStatus();
+  refreshSpaceport();
 }
 
 export function refreshStatus() {
@@ -24,11 +26,40 @@ export function refreshStatus() {
   (document.querySelector(".planet .position span") as HTMLSpanElement).textContent = position;
 }
 
+export function refreshPlaces() {
+  // TODO
+}
 
-function onEnterShipClick(event: MouseEvent) {
+export function refreshSpaceport() {
+  (document.querySelector(".exit-ship") as HTMLDivElement).hidden = game.ship == null;
+  (document.querySelector(".enter-ship") as HTMLDivElement).hidden = game.ship != null;
+}
+
+function onSpaceportExitShipclick(event: MouseEvent) {
   event.preventDefault();
 
-  const onEnterShipAck: Game.EnterShipCallback = (err, ship) => {
+  const onExitShipAck: Game.SpaceportExitShipCallback = (err) => {
+    if (err != null) {
+      log(`Error while exiting ship: ${err}.`);
+      return;
+    }
+
+    game.ship = null;
+    ui.getPane("ship").hidden = true;
+    log("Exited the ship.");
+
+    ui.crew.refreshStatus();
+    refreshPlaces();
+    refreshSpaceport();
+  };
+
+  socket.emit("spaceport.exitShip", onExitShipAck);
+}
+
+function onSpaceportEnterShipClick(event: MouseEvent) {
+  event.preventDefault();
+
+  const onEnterShipAck: Game.SpaceportEnterShipCallback = (err, ship) => {
     if (err != null) {
       log(`Error while entering ship: ${err}.`);
       return;
@@ -36,14 +67,16 @@ function onEnterShipClick(event: MouseEvent) {
 
     log("Entered the ship.");
     game.ship = ship;
-    ui.getPane("planet").hidden = true;
     ui.getPane("ship").hidden = false;
+
     ui.ship.refresh();
-    ui.crew.refresh();
+    ui.crew.refreshStatus();
+    refreshPlaces();
+    refreshSpaceport();
   };
 
   const shipId = localStorage["gameShipId"] = ui.getValue("ship-id");
   const key = localStorage["gameShipKey"] = ui.getValue("ship-key");
 
-  socket.emit("enterShip", shipId, key, onEnterShipAck);
+  socket.emit("spaceport.enterShip", shipId, key, onEnterShipAck);
 }

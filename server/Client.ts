@@ -76,7 +76,7 @@ export default class Client {
     if (ship != null) {
       if (ship.planetId != null) planet = planets.byId[ship.planetId].pub;
     } else {
-      planet = planets.byId[this.crew.pub.location.planetId].pub;
+      planet = planets.byId[this.crew.pub.location.planet.id].pub;
     }
 
     this.crewDone();
@@ -85,15 +85,25 @@ export default class Client {
 
   private crewDone() {
     const location = this.crew.pub.location;
-    if (location.shipId != null) this.socket.join(`ship:${location.shipId}`);
-    else if (location.planetId != null) this.socket.join(`planet:${location.planetId}`);
+    if (location.shipId != null) {
+      this.socket.join(`ship:${location.shipId}`);
 
-    this.socket.on("useShipScanner", this.onUseShipScanner);
-    this.socket.on("setShipCourse", this.onSetShipCourse);
-    this.socket.on("landShip", this.onLandShip);
-    this.socket.on("leaveShip", this.onLeaveShip);
-    this.socket.on("enterShip", this.onEnterShip);
-    this.socket.on("takeOffShip", this.onTakeOffShip);
+      const ship = ships.byId[location.shipId];
+      if (ship.pub.planetId != null) {
+        this.socket.join(`planet:${ship.pub.planetId}`);
+      }
+    } else if (location.planet != null) {
+      this.socket.join(`planet:${location.planet.id}`);
+      this.socket.join(`planet:${location.planet.id}:${location.planet.place}`);
+    }
+
+    this.socket.on("ship.useScanner", this.onUseShipScanner);
+    this.socket.on("ship.setCourse", this.onSetShipCourse);
+    this.socket.on("ship.land", this.onLandShip);
+    this.socket.on("ship.takeOff", this.onTakeOffShip);
+
+    this.socket.on("spaceport.exitShip", this.onSpaceportExitShip);
+    this.socket.on("spaceport.enterShip", this.onSpaceportEnterShip);
 
     this.socket.on("shout", this.onShout);
   }
@@ -129,42 +139,10 @@ export default class Client {
     ship.pub.planetId = planet.pub.id;
     ships.addToPlanet(ship);
 
-    callback(null, planet.pub);
-  };
-
-  private onLeaveShip = (callback: Game.LeaveShipCallback) => {
-    const ship = ships.byId[this.crew.pub.location.shipId];
-    if (ship == null) { callback("notOnShip"); return; }
-    if (ship.pub.planetId == null) { callback("shipNotOnPlanet"); return; }
-
-    this.crew.pub.location.shipId = null;
-    this.crew.pub.location.planetId = ship.pub.planetId;
-
-    ship.crew = null;
-
-    this.socket.leave(`ship:${ship.pub.id}`);
     this.socket.join(`planet:${ship.pub.planetId}`);
+    this.socket.join(`planet:${ship.pub.planetId}:spaceport`);
 
-    callback(null);
-  };
-
-  private onEnterShip = (shipId: string, key: string, callback: Game.EnterShipCallback) => {
-    if (this.crew.pub.location.shipId != null) { callback("alreadyOnShip"); return; }
-    const ship = ships.byId[shipId];
-    if (ship == null) { callback("noSuchShip"); return; }
-    if (ship.pub.planetId !== this.crew.pub.location.planetId) { callback("shipNotOnPlanet"); return; }
-    if (ship.crew != null) { callback("shipFull"); return; }
-    if (ship.priv.key !== key) { callback("invalidKey"); return; }
-
-    ship.crew = this.crew;
-
-    this.crew.pub.location.planetId = null;
-    this.crew.pub.location.shipId = ship.pub.id;
-
-    this.socket.leave(`planet:${ship.pub.planetId}`);
-    this.socket.join(`ship:${ship.pub.id}`);
-
-    callback(null, ship.pub);
+    callback(null, planet.pub);
   };
 
   private onTakeOffShip = (callback: Game.TakeOffShipCallback) => {
@@ -172,8 +150,47 @@ export default class Client {
     if (ship == null) { callback("notOnShip"); return; }
     if (ship.pub.planetId == null) { callback("shipNotOnPlanet"); return; }
 
+    this.socket.leave(`planet:${ship.pub.planetId}`);
+    this.socket.leave(`planet:${ship.pub.planetId}:spaceport`);
+
     ships.removeFromPlanet(ship);
     callback(null);
+  };
+
+
+  private onSpaceportExitShip = (callback: Game.SpaceportExitShipCallback) => {
+    const ship = ships.byId[this.crew.pub.location.shipId];
+    if (ship == null) { callback("notOnShip"); return; }
+    if (ship.pub.planetId == null) { callback("shipNotOnPlanet"); return; }
+
+    this.crew.pub.location.shipId = null;
+    this.crew.pub.location.planet = { id: ship.pub.planetId, place: "spaceport" };
+
+    ship.crew = null;
+    this.socket.leave(`ship:${ship.pub.id}`);
+
+    callback(null);
+  };
+
+  private onSpaceportEnterShip = (shipId: string, key: string, callback: Game.SpaceportEnterShipCallback) => {
+    const crewLocation = this.crew.pub.location;
+    if (crewLocation.shipId != null) { callback("alreadyOnShip"); return; }
+    if (crewLocation.planet.place !== "spaceport") { callback("notAtSpaceport"); return; }
+
+    const ship = ships.byId[shipId];
+    if (ship == null) { callback("noSuchShip"); return; }
+    if (ship.pub.planetId !== crewLocation.planet.id) { callback("shipNotOnPlanet"); return; }
+    if (ship.crew != null) { callback("shipFull"); return; }
+    if (ship.priv.key !== key) { callback("invalidKey"); return; }
+
+    ship.crew = this.crew;
+
+    crewLocation.planet = null;
+    crewLocation.shipId = ship.pub.id;
+
+    this.socket.join(`ship:${ship.pub.id}`);
+
+    callback(null, ship.pub);
   };
 
   private onShout = (message: string, callback: Game.ShoutCallback) => {
@@ -183,7 +200,7 @@ export default class Client {
     }
 
     const location = this.crew.pub.location;
-    const room = (location.shipId != null) ? `ship:${location.shipId}` : `planet:${location.planetId}`;
+    const room = (location.shipId != null) ? `ship:${location.shipId}` : `planet:${location.planet.id}:${location.planet.place}`;
     io.in(room).emit("shout", { crewId: this.crew.pub.id, captainName: this.crew.pub.members.captain.name }, message);
     callback(null);
   };
