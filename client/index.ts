@@ -9,8 +9,10 @@ let socket: SocketIOClient.Socket;
 
 function getPane(name: string) { return document.querySelector(`body > main > .${name}`) as HTMLDivElement; }
 function getButton(name: string) { return document.querySelector(`button.${name}`) as HTMLButtonElement; }
+function getInput(name: string) { return (document.querySelector(`input.${name}`) as HTMLInputElement); }
 function getValue(name: string) { return (document.querySelector(`input.${name}`) as HTMLInputElement).value; }
 
+getInput("server-host").value = window.location.host;
 getButton("connect").addEventListener("click", onConnectClick);
 
 let ourCrew: Game.Crew;
