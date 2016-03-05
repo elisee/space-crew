@@ -96,6 +96,7 @@ declare namespace ServerGame {
     pub: Game.Ship;
 
     key: string;
+    crew: Crew;
   }
 
   interface Planet {

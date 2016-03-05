@@ -31,9 +31,6 @@ export default class Client {
       position: getRandomPosition()
     };
 
-    const serverShip: ServerGame.Ship = { pub: ship, key: generateKey() };
-    ships.register(serverShip);
-
     const crewId = getNextId();
 
     const captain: Game.CrewMember = {
@@ -51,6 +48,9 @@ export default class Client {
     const serverCrew: ServerGame.Crew = { pub: crew, key: generateKey() };
     crews.register(serverCrew);
     this.crew = serverCrew;
+
+    const serverShip: ServerGame.Ship = { pub: ship, crew: serverCrew, key: generateKey() };
+    ships.register(serverShip);
 
     this.crewDone();
     callback(null, { crew, ship, crewKey: serverCrew.key, shipKey: serverShip.key });
@@ -125,6 +125,8 @@ export default class Client {
     this.crew.pub.location.shipId = null;
     this.crew.pub.location.planetId = ship.pub.planetId;
 
+    ship.crew = null;
+
     this.socket.leave(`ship:${ship.pub.id}`);
     this.socket.join(`planet:${ship.pub.planetId}`);
 
@@ -136,7 +138,10 @@ export default class Client {
     const ship = ships.byId[shipId];
     if (ship == null) { callback("noSuchShip"); return; }
     if (ship.pub.planetId !== this.crew.pub.location.planetId) { callback("shipNotOnPlanet"); return; }
+    if (ship.crew != null) { callback("shipFull"); return; }
     if (ship.key !== key) { callback("invalidKey"); return; }
+
+    ship.crew = this.crew;
 
     this.crew.pub.location.planetId = null;
     this.crew.pub.location.shipId = ship.pub.id;
