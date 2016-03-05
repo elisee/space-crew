@@ -53,5 +53,7 @@ function onShoutClick(event: MouseEvent) {
   };
 
   const message = ui.getValue("shout-message");
+  ui.getInput("shout-message").value = "";
+
   socket.emit("shout", message, onShoutAck);
 }
