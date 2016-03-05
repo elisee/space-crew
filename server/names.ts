@@ -1,9 +1,8 @@
+const nameRegex = /^[A-Za-z][A-Za-z0-9]{1,29}$/;
+
 export function isValidName(name: string) {
   if (typeof name !== "string") return false;
-  if (name.length < 2) return false;
-  if (name.length > 30) return false;
-
-  return true;
+  return nameRegex.test(name);
 }
 
 const digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

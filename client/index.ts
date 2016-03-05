@@ -17,6 +17,7 @@ getButton("connect").addEventListener("click", onConnectClick);
 
 let ourCrew: Game.Crew;
 let ourShip: Game.Ship;
+let ourPlanet: Game.Planet;
 
 function log(message: string) {
   logElt.value += message + "\n";
@@ -33,12 +34,12 @@ function onConnectClick(event: MouseEvent) {
   getPane("server").hidden = true;
 
   socket.on("connect", onConnected);
-  socket.on("disconnect", () => { document.write("Whoops, disconnected. Please reload the page.") });
+  socket.on("disconnect", () => { document.write("Whoops, disconnected. Please reload the page."); });
 }
 
 function onConnected() {
   log("Connected!");
-  getPane("crew").hidden = false;
+  getPane("log-in").hidden = false;
 
   getButton("create-crew").addEventListener("click", onCreateCrewClick);
   getButton("return-to-crew").addEventListener("click", onReturnToCrewClick);
@@ -53,7 +54,7 @@ function onCreateCrewClick(event: MouseEvent) {
   const onCreateCrewAck: Game.CreateCrewCallback = (err, result) => {
     if (err != null) {
       log(`Error while creating crew: ${err}.`);
-      getPane("crew").hidden = false;
+      getPane("log-in").hidden = false;
       return;
     }
 
@@ -67,7 +68,7 @@ function onCreateCrewClick(event: MouseEvent) {
   };
 
   socket.emit("createCrew", shipName, captainName, onCreateCrewAck);
-  getPane("crew").hidden = true;
+  getPane("log-in").hidden = true;
 }
 
 function onReturnToCrewClick(event: MouseEvent) {
@@ -79,56 +80,112 @@ function onReturnToCrewClick(event: MouseEvent) {
   const onReturnToCrewAck: Game.ReturnToCrewCallback = (err, result) => {
     if (err != null) {
       log(`Error while returning to crew: ${err}.`);
-      getPane("crew").hidden = false;
+      getPane("log-in").hidden = false;
       return;
     }
 
-    if (result.ship != null) log(`Current ship ID is ${result.ship.id}.`);
+    ourCrew = result.crew;
+    ourShip = result.ship;
+    ourPlanet = result.planet;
 
     crewDone();
   };
 
   socket.emit("returnToCrew", crewId, crewKey, onReturnToCrewAck);
-  getPane("crew").hidden = true;
+  getPane("log-in").hidden = true;
 }
 
 function crewDone() {
+  getPane("crew").hidden = false;
+  updateCrewInfo();
+
   socket.on("shipCourseTargetReached", onShipCourseTargetReached);
   socket.on("setShipPosition", onSetShipPosition);
   socket.on("shout", onShout);
 
-  getPane("ship").hidden = false;
-
   if (ourShip != null) {
-    log(`Ship position is (${ourShip.position.x},${ourShip.position.y},${ourShip.position.z}).`);
+    getPane("ship").hidden = false;
+    updateShipInfo();
   }
 
-  getButton("scan-planets").addEventListener("click", onScanPlanetsClick);
-  getButton("set-ship-course").addEventListener("click", onSetShipCourseClick);
+  getButton("shout").addEventListener("click", onShoutClick);
+
   getButton("land-ship").addEventListener("click", onLandShipClick);
   getButton("take-off-ship").addEventListener("click", onTakeOffShipClick);
   getButton("leave-ship").addEventListener("click", onLeaveShipClick);
+
+  getButton("use-ship-scanner").addEventListener("click", onUseShipScannerClick);
+
+  getButton("set-ship-course").addEventListener("click", onSetShipCourseClick);
+
   getButton("enter-ship").addEventListener("click", onEnterShipClick);
-  getButton("shout").addEventListener("click", onShoutClick);
+}
+
+function getReadablePosition(pos: XYZ) {
+  return `(${pos.x},${pos.y},${pos.z})`;
+}
+
+function updateCrewInfo() {
+  let location = "";
+  if (ourShip != null) location = `Onboard ship ${ourShip.name} (ID: ${ourShip.id}).`;
+  else location = `On planet ${ourPlanet.name} (ID: ${ourPlanet.id}).`;
+
+  (document.querySelector(".crew .location span") as HTMLSpanElement).textContent = location;
+
+  const membersList = document.querySelector(".crew .members ul") as HTMLUListElement;
+  membersList.innerHTML = "";
+
+  for (const role in ourCrew.members) {
+    const member = ourCrew.members[role];
+
+    let desc = `${role}: (none)`;
+    if (member != null) desc = `${role}: ${member.name}`;
+
+    const li = document.createElement("li");
+    li.textContent = desc;
+
+    membersList.appendChild(li);
+  }
+}
+
+function updateShipInfo() {
+  let location = "In space";
+  if (ourShip.planetId != null) location = `Landed on planet ${ourPlanet.name} (ID: ${ourPlanet.id}).`;
+
+  const position = getReadablePosition(ourShip.position);
+
+  let course = "None";
+  if (ourShip.course != null) course = `Moving towards ${getReadablePosition(ourShip.course.target)}`;
+
+  (document.querySelector(".ship .location span") as HTMLSpanElement).textContent = location;
+  (document.querySelector(".ship .position span") as HTMLSpanElement).textContent = position;
+  (document.querySelector(".ship .course span") as HTMLSpanElement).textContent = course;
+}
+
+function updatePlanetInfo() {
+  // ...
 }
 
 function onShipCourseTargetReached() {
   log("Ship course target reached!");
+
+  ourShip.course = null;
+  updateShipInfo();
 }
 
 function onSetShipPosition(pos: XYZ) {
   ourShip.position = pos;
-  log(`Ship position is now at (${pos.x},${pos.y},${pos.z})`);
+  updateShipInfo();
 }
 
 function onShout(author: { crewId: string; captainName: string }, text: string) {
   log(`${author.captainName} (Crew ID: ${author.crewId}) shouts: ${text}`);
 }
 
-function onScanPlanetsClick(event: MouseEvent) {
+function onUseShipScannerClick(event: MouseEvent) {
   event.preventDefault();
 
-  const onScanPlanetsAck: Game.ScanPlanetsCallback = (err, planets) => {
+  const onScanPlanetsAck: Game.UseShipScannerCallback = (err, planets) => {
     if (err != null) {
       log(`Error while scanning planets: ${err}.`);
       return;
@@ -142,13 +199,14 @@ function onScanPlanetsClick(event: MouseEvent) {
     if (planets.length === 0) log("None found!");
   };
 
-  socket.emit("scanPlanets", onScanPlanetsAck);
+  socket.emit("useShipScanner", onScanPlanetsAck);
 }
 
 function onSetShipCourseClick(event: MouseEvent) {
   event.preventDefault();
 
   const [ x, y, z ] = getValue("ship-course-target").split(",").map((v) => parseInt(v, 10));
+  const target = { x, y, z };
 
   const onSetShipCourseAck: Game.SetShipCourseCallback = (err) => {
     if (err != null) {
@@ -156,23 +214,29 @@ function onSetShipCourseClick(event: MouseEvent) {
       return;
     }
 
-    log("Course set!");
+    ourShip.course = { target };
+    log("Ship course set!");
+    updateShipInfo();
   };
 
   log(`Setting course for (${x},${y},${z})`);
-  socket.emit("setShipCourse", { x, y, z }, onSetShipCourseAck);
+  socket.emit("setShipCourse", target, onSetShipCourseAck);
 }
 
 function onLandShipClick(event: MouseEvent) {
   event.preventDefault();
 
-  const onLandShipAck: Game.LandShipCallback = (err) => {
+  const onLandShipAck: Game.LandShipCallback = (err, planet) => {
     if (err != null) {
       log(`Error while landing ship: ${err}.`);
       return;
     }
 
     log("Ship has landed!");
+
+    ourPlanet = planet;
+    ourShip.planetId = planet.id;
+    updateShipInfo();
   };
 
   socket.emit("landShip", onLandShipAck);
@@ -188,6 +252,10 @@ function onTakeOffShipClick(event: MouseEvent) {
     }
 
     log("Ship has taken off!");
+
+    ourPlanet = null;
+    ourShip.planetId = null;
+    updateShipInfo();
   };
 
   socket.emit("takeOffShip", onTakeOffShipAck);
@@ -203,6 +271,12 @@ function onLeaveShipClick(event: MouseEvent) {
     }
 
     log("Left the ship.");
+    ourShip = null;
+    getPane("ship").hidden = true;
+    updateCrewInfo();
+
+    getPane("planet").hidden = false;
+    updatePlanetInfo();
   };
 
   socket.emit("leaveShip", onLeaveShipAck);
@@ -211,13 +285,18 @@ function onLeaveShipClick(event: MouseEvent) {
 function onEnterShipClick(event: MouseEvent) {
   event.preventDefault();
 
-  const onEnterShipAck: Game.LeaveShipCallback = (err) => {
+  const onEnterShipAck: Game.EnterShipCallback = (err, ship) => {
     if (err != null) {
       log(`Error while entering ship: ${err}.`);
       return;
     }
 
     log("Entered the ship.");
+    ourShip = ship;
+    getPane("planet").hidden = true;
+    getPane("ship").hidden = false;
+    updateShipInfo();
+    updateCrewInfo();
   };
 
   const shipId = getValue("ship-id");

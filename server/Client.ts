@@ -42,7 +42,7 @@ export default class Client {
     const crew: Game.Crew = {
       id: crewId,
       location: { shipId: ship.id },
-      members: { captain }
+      members: { captain, pilot: null, weapon: null, mechanic: null, cook: null }
     };
 
     const serverCrew: ServerGame.Crew = { pub: crew, key: generateKey() };
@@ -65,9 +65,16 @@ export default class Client {
 
     const serverShip = ships.byId[serverCrew.pub.location.shipId];
     const ship = serverShip != null ? serverShip.pub : null;
+    let planet: Game.Planet;
+
+    if (ship != null) {
+      if (ship.planetId != null) planet = planets.byId[ship.planetId].pub;
+    } else {
+      planet = planets.byId[this.crew.pub.location.planetId].pub;
+    }
 
     this.crewDone();
-    callback(null, { crew: serverCrew.pub, ship });
+    callback(null, { crew: serverCrew.pub, ship, planet });
   };
 
   private crewDone() {
@@ -75,7 +82,7 @@ export default class Client {
     if (location.shipId != null) this.socket.join(`ship:${location.shipId}`);
     else if (location.planetId != null) this.socket.join(`planet:${location.planetId}`);
 
-    this.socket.on("scanPlanets", this.onScanPlanets);
+    this.socket.on("useShipScanner", this.onUseShipScanner);
     this.socket.on("setShipCourse", this.onSetShipCourse);
     this.socket.on("landShip", this.onLandShip);
     this.socket.on("leaveShip", this.onLeaveShip);
@@ -85,7 +92,7 @@ export default class Client {
     this.socket.on("shout", this.onShout);
   }
 
-  private onScanPlanets = (callback: Game.ScanPlanetsCallback) => {
+  private onUseShipScanner = (callback: Game.UseShipScannerCallback) => {
     const ship = ships.byId[this.crew.pub.location.shipId];
     if (ship == null) { callback("notOnShip"); return; }
 
@@ -114,7 +121,7 @@ export default class Client {
     ship.pub.planetId = planet.pub.id;
     ships.addToPlanet(ship);
 
-    callback(null);
+    callback(null, planet.pub);
   };
 
   private onLeaveShip = (callback: Game.LeaveShipCallback) => {
@@ -149,7 +156,7 @@ export default class Client {
     this.socket.leave(`planet:${ship.pub.planetId}`);
     this.socket.join(`ship:${ship.pub.id}`);
 
-    callback(null);
+    callback(null, ship.pub);
   };
 
   private onTakeOffShip = (callback: Game.TakeOffShipCallback) => {

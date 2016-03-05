@@ -22,10 +22,10 @@ declare namespace Game {
 
     members: {
       captain: CrewMember;
-      pilot?: CrewMember;
-      weapon?: CrewMember;
-      mechanic?: CrewMember;
-      cook?: CrewMember;
+      pilot: CrewMember;
+      weapon: CrewMember;
+      mechanic: CrewMember;
+      cook: CrewMember;
     }
   }
 
@@ -40,11 +40,11 @@ declare namespace Game {
   }
 
   interface ReturnToCrewCallback {
-    (err: string, result?: { crew: Crew; ship: Ship; }): void;
+    (err: string, result?: { crew: Crew; ship: Ship; planet: Planet; }): void;
   }
 
-  interface ScanPlanetsCallback {
-    (err: string, nearbyPlanets?: Game.Planet[]): void;
+  interface UseShipScannerCallback {
+    (err: string, nearbyPlanets?: Planet[]): void;
   }
 
   interface SetShipCourseCallback {
@@ -52,7 +52,7 @@ declare namespace Game {
   }
 
   interface LandShipCallback {
-    (err: string): void;
+    (err: string, planet?: Planet): void;
   }
 
   interface LeaveShipCallback {
@@ -60,7 +60,7 @@ declare namespace Game {
   }
 
   interface EnterShipCallback {
-    (err: string): void;
+    (err: string, ship?: Ship): void;
   }
 
   interface TakeOffShipCallback {

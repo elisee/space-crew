@@ -1,10 +1,14 @@
+body {
+  font-family: sans-serif;
+}
+
 body form, .log {
   border: 1px solid #ccc;
   margin-bottom: 0.5em;
   padding: 0.5em;
 }
 
-body header {
+body form header {
   text-transform: uppercase;
   font-weight: bold;
   color: #666;
@@ -12,6 +16,14 @@ body header {
 
 body > main > div {
   margin-bottom: 1em;
+  background: #eee;
+  padding: 1em;
+}
+
+body > main > div > header {
+  margin-bottom: 0.5em;
+  font-weight: bold;
+  color: #aaa;
 }
 
 body {

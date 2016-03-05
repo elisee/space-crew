@@ -6,6 +6,7 @@
 <body>
   <main>
     <div class="server">
+      <header>Welcome</header>
       <form>
         <header>Join server</header>
         <input type="text" class="server-host" value="" />
@@ -13,7 +14,8 @@
       </form>
     </div>
 
-    <div class="crew" hidden>
+    <div class="log-in" hidden>
+      <header>Start playing</header>
       <form>
         <header>Create new crew</header>
         <input type="text" class="ship-name" minlength="2" placeholder="Ship name" />
@@ -29,13 +31,40 @@
       </form>
     </div>
 
-    <div class="ship" hidden>
+    <div class="crew" hidden>
+      <header>Crew</header>
       <form>
-        <header>Current ship</header>
-        <button class="scan-planets">Scan for nearby planets</button>
+        <header>Status</header>
+        <div class="location">Location: <span></span></div>
+        <div class="members">Members: <ul></ul></div>
+      </form>
+      
+      <form>
+        <header>Shout</header>
+        <input type="text" class="shout-message" placeholder="Message" />
+        <button class="shout">Shout</button>
+      </form>
+    </div>
+
+    <div class="ship" hidden>
+      <header>Ship</header>
+      <form>
+        <header>Status</header>
+        <div class="location">Location: <span></span></div>
+        <div class="position">Position: <span></span></div>
+        <div class="course">Course: <span></span></div>
+      </form>
+      
+      <form>
+        <header>Actions</header>
         <button class="land-ship">Land ship</button>
         <button class="take-off-ship">Take off ship</button>
         <button class="leave-ship">Leave ship</button>
+      </form>
+
+      <form>
+        <header>Scanner</header>
+        <button class="use-ship-scanner">Scan for nearby objects</button>
       </form>
 
       <form>
@@ -43,29 +72,18 @@
         <input type="text" class="ship-course-target" placeholder="x,y,z">
         <button class="set-ship-course">Set course</button>
       </form>
+    </div>
 
+    <div class="planet" hidden>
+      <header>Planet</header>
       <form>
         <header>Enter ship</header>
         <input type="text" class="ship-id" placeholder="Ship ID" />
         <input type="text" class="ship-key" placeholder="Key" />
         <button class="enter-ship">Enter ship</button>
       </form>
-
-      <form>
-        <header>Shout</header>
-        <input type="text" class="shout-message" placeholder="Message" />
-        <button class="shout">Shout</button>
-      </form>
     </div>
   </main>
-
-  <div class="shout" hidden>
-    <form>
-      <header>Shout</header>
-      <input type="text">
-      <button class="shout">Shout</button>
-    </form>
-  </div>
 
   <div class="log">
     <header>Captain's log</header>
