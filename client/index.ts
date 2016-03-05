@@ -116,7 +116,7 @@ function onShipCourseTargetReached() {
 
 function onSetShipPosition(pos: XYZ) {
   ourShip.position = pos;
-  log(`Ship position is now (${pos.x},${pos.y},${pos.z})`);
+  log(`Ship position is now at (${pos.x},${pos.y},${pos.z})`);
 }
 
 function onShout(author: { crewId: string; captainName: string }, text: string) {
