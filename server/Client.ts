@@ -13,13 +13,26 @@ export default class Client {
   private crew: ServerGame.Crew;
 
   constructor(public socket: SocketIO.Socket) {
+    this.log("Connected.");
+    this.socket.on("disconnected", this.onDisconnected);
     this.socket.on("createCrew", this.onCreateCrew);
     this.socket.on("returnToCrew", this.onReturnToCrew);
   }
 
+  log(message: string) {
+    const date = new Date();
+    const text = `${date.toLocaleDateString()} ${date.toLocaleTimeString()} [${this.crew != null ? this.crew.pub.members.captain.name : this.socket.id}] ${message}`;
+    console.log(text);
+  }
+
   private kill() {
+    this.log("Killed.");
     this.socket.disconnect();
   }
+
+  private onDisconnected = () => {
+    this.log("Disconnected.");
+  };
 
   private onCreateCrew = (shipName: string, captainName: string, callback: Game.CreateCrewCallback) => {
     if (typeof callback !== "function") { this.kill(); return; }
@@ -53,6 +66,9 @@ export default class Client {
 
     const serverCrew: ServerGame.Crew = { pub: crew, priv: { key: generateKey() } };
     crews.register(serverCrew);
+
+    this.log(`Captain ${captain.name} started a crew aboard ship ${ship.name}.`);
+
     this.crew = serverCrew;
 
     const serverShip: ServerGame.Ship = { pub: ship, crew: serverCrew, priv: { key: generateKey() } };
@@ -66,6 +82,8 @@ export default class Client {
     const serverCrew = crews.byId[crewId];
     if (serverCrew == null) { callback("noSuchCrew"); return; }
     if (serverCrew.priv.key !== key) { callback("invalidKey"); return; }
+
+    this.log(`${serverCrew.pub.members.captain.name} returning to crew.`);
 
     this.crew = serverCrew;
 
@@ -124,6 +142,8 @@ export default class Client {
 
     ship.pub.course = { target };
 
+    this.log(`Setting ship course to ${getPositionString(target)}.`);
+
     callback(null);
   };
 
@@ -142,6 +162,8 @@ export default class Client {
     this.socket.join(`planet:${ship.pub.planetId}`);
     this.socket.join(`planet:${ship.pub.planetId}:spaceport`);
 
+    this.log(`Landed ship on ${planet.pub.name}.`);
+
     callback(null, planet.pub);
   };
 
@@ -153,7 +175,10 @@ export default class Client {
     this.socket.leave(`planet:${ship.pub.planetId}`);
     this.socket.leave(`planet:${ship.pub.planetId}:spaceport`);
 
+    this.log(`Took off from ${planets.byId[ship.pub.planetId].pub.name}.`);
+
     ships.removeFromPlanet(ship);
+
     callback(null);
   };
 
@@ -168,6 +193,8 @@ export default class Client {
 
     ship.crew = null;
     this.socket.leave(`ship:${ship.pub.id}`);
+
+    this.log(`Exiting ship.`);
 
     callback(null);
   };
@@ -190,6 +217,8 @@ export default class Client {
 
     this.socket.join(`ship:${ship.pub.id}`);
 
+    this.log(`Entering ship ${ship.pub.name}.`);
+
     callback(null, ship.pub);
   };
 
@@ -201,6 +230,8 @@ export default class Client {
 
     const location = this.crew.pub.location;
     const room = (location.shipId != null) ? `ship:${location.shipId}` : `planet:${location.planet.id}:${location.planet.place}`;
+
+    this.log(`Shouted "${message}" in ${room}.`);
     io.in(room).emit("shout", { crewId: this.crew.pub.id, captainName: this.crew.pub.members.captain.name }, message);
     callback(null);
   };
