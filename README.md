@@ -3,7 +3,7 @@ A multiplayer videogame, maybe.
 
 ## How to run your own server
 
-Clone the repository and run:
+Install [Node.js](https://nodejs.org/), clone the repository and run:
 
 ```bash
 npm install
