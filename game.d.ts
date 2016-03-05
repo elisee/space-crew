@@ -86,20 +86,39 @@ declare namespace Game {
 }
 
 declare namespace ServerGame {
-  interface Crew {
+  interface SavedCrew {
     pub: Game.Crew;
-
-    key: string;
+    priv: {
+      key: string;
+    };
   }
 
-  interface Ship {
-    pub: Game.Ship;
+  interface Crew extends SavedCrew {
+  }
 
-    key: string;
+  interface SavedShip {
+    pub: Game.Ship;
+    priv: {
+      key: string;
+    };
+  }
+
+  interface Ship extends SavedShip {
     crew: Crew;
   }
 
-  interface Planet {
+  interface SavedPlanet {
     pub: Game.Planet;
+    priv: {};
+  }
+
+  interface Planet extends SavedPlanet {
+  }
+
+  interface Save {
+    time: number;
+    crews: SavedCrew[];
+    ships: SavedShip[];
+    planets: SavedPlanet[];
   }
 }

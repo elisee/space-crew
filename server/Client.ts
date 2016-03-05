@@ -45,21 +45,21 @@ export default class Client {
       members: { captain, pilot: null, weapon: null, mechanic: null, cook: null }
     };
 
-    const serverCrew: ServerGame.Crew = { pub: crew, key: generateKey() };
+    const serverCrew: ServerGame.Crew = { pub: crew, priv: { key: generateKey() } };
     crews.register(serverCrew);
     this.crew = serverCrew;
 
-    const serverShip: ServerGame.Ship = { pub: ship, crew: serverCrew, key: generateKey() };
+    const serverShip: ServerGame.Ship = { pub: ship, crew: serverCrew, priv: { key: generateKey() } };
     ships.register(serverShip);
 
     this.crewDone();
-    callback(null, { crew, ship, crewKey: serverCrew.key, shipKey: serverShip.key });
+    callback(null, { crew, ship, crewKey: serverCrew.priv.key, shipKey: serverShip.priv.key });
   };
 
   private onReturnToCrew = (crewId: string, key: string, callback: Game.ReturnToCrewCallback) => {
     const serverCrew = crews.byId[crewId];
     if (serverCrew == null) { callback("noSuchCrew"); return; }
-    if (serverCrew.key !== key) { callback("invalidKey"); return; }
+    if (serverCrew.priv.key !== key) { callback("invalidKey"); return; }
 
     this.crew = serverCrew;
 
@@ -146,7 +146,7 @@ export default class Client {
     if (ship == null) { callback("noSuchShip"); return; }
     if (ship.pub.planetId !== this.crew.pub.location.planetId) { callback("shipNotOnPlanet"); return; }
     if (ship.crew != null) { callback("shipFull"); return; }
-    if (ship.key !== key) { callback("invalidKey"); return; }
+    if (ship.priv.key !== key) { callback("invalidKey"); return; }
 
     ship.crew = this.crew;
 

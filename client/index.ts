@@ -105,7 +105,8 @@ function crewDone() {
 
   if (ourShip != null) {
     getPane("ship").hidden = false;
-    updateShipInfo();
+    updateShipStatus();
+    updateShipActions();
   }
 
   getButton("shout").addEventListener("click", onShoutClick);
@@ -148,7 +149,7 @@ function updateCrewInfo() {
   }
 }
 
-function updateShipInfo() {
+function updateShipStatus() {
   let location = "In space";
   if (ourShip.planetId != null) location = `Landed on planet ${ourPlanet.name} (ID: ${ourPlanet.id}).`;
 
@@ -162,6 +163,14 @@ function updateShipInfo() {
   (document.querySelector(".ship .course span") as HTMLSpanElement).textContent = course;
 }
 
+function updateShipActions() {
+  const hasLanded = ourShip.planetId != null;
+
+  getButton("land-ship").disabled = hasLanded;
+  getButton("take-off-ship").disabled = !hasLanded;
+  getButton("leave-ship").disabled = !hasLanded;
+}
+
 function updatePlanetInfo() {
   // ...
 }
@@ -170,12 +179,12 @@ function onShipCourseTargetReached() {
   log("Ship course target reached!");
 
   ourShip.course = null;
-  updateShipInfo();
+  updateShipStatus();
 }
 
 function onSetShipPosition(pos: XYZ) {
   ourShip.position = pos;
-  updateShipInfo();
+  updateShipStatus();
 }
 
 function onShout(author: { crewId: string; captainName: string }, text: string) {
@@ -216,7 +225,7 @@ function onSetShipCourseClick(event: MouseEvent) {
 
     ourShip.course = { target };
     log("Ship course set!");
-    updateShipInfo();
+    updateShipStatus();
   };
 
   log(`Setting course for (${x},${y},${z})`);
@@ -236,7 +245,8 @@ function onLandShipClick(event: MouseEvent) {
 
     ourPlanet = planet;
     ourShip.planetId = planet.id;
-    updateShipInfo();
+    updateShipStatus();
+    updateShipActions();
   };
 
   socket.emit("landShip", onLandShipAck);
@@ -255,7 +265,8 @@ function onTakeOffShipClick(event: MouseEvent) {
 
     ourPlanet = null;
     ourShip.planetId = null;
-    updateShipInfo();
+    updateShipStatus();
+    updateShipActions();
   };
 
   socket.emit("takeOffShip", onTakeOffShipAck);
@@ -295,7 +306,8 @@ function onEnterShipClick(event: MouseEvent) {
     ourShip = ship;
     getPane("planet").hidden = true;
     getPane("ship").hidden = false;
-    updateShipInfo();
+    updateShipStatus();
+    updateShipActions();
     updateCrewInfo();
   };
 
