@@ -1,7 +1,15 @@
 import * as ui from "./index";
 import game, { log, socket } from "../index";
 
+import * as upgrades from "../../server/upgrades";
+
 export function setup() {
+  // Network
+  socket.on("shipScannerResults", onShipScannerResults);
+  socket.on("shipCourseTargetReached", onShipCourseTargetReached);
+  socket.on("setShipPosition", onSetShipPosition);
+
+  // UI events
   ui.getButton("land-ship").addEventListener("click", onLandShipClick);
   ui.getButton("take-off-ship").addEventListener("click", onTakeOffShipClick);
   ui.getButton("leave-ship").addEventListener("click", onLeaveShipClick);
@@ -9,6 +17,14 @@ export function setup() {
   ui.getButton("use-ship-scanner").addEventListener("click", onUseShipScannerClick);
 
   ui.getButton("set-ship-course").addEventListener("click", onSetShipCourseClick);
+
+}
+
+export function tick() {
+  if (game.ship.scanner.timer != null) {
+    game.ship.scanner.timer = Math.max(game.ship.scanner.timer - 1, 0);
+    refreshScannerTimer();
+  }
 }
 
 export function refresh() {
@@ -40,14 +56,64 @@ export function refreshActions() {
 }
 
 function refreshScanner() {
-  
+  const isScanInProgress = game.ship.scanner.timer != null;
+  ui.getButton("use-ship-scanner").disabled = isScanInProgress;
+
+  const timerElt = document.querySelector(".ship .scanner .timer") as HTMLDivElement;
+  timerElt.hidden = !isScanInProgress;
+  refreshScannerTimer();
+  refreshScannerData();
 }
 
+function refreshScannerTimer() {
+  const timerElt = document.querySelector(".ship .scanner .timer") as HTMLDivElement;
+  if (game.ship.scanner.timer != null) {
+    (timerElt.querySelector("span") as HTMLSpanElement).textContent = game.ship.scanner.timer.toString();
+  }
+}
 
+function refreshScannerData() {
+  const hasScannerData = game.ship.scanner.data != null;
+
+  (document.querySelector(".scanner .results") as HTMLDivElement).hidden = !hasScannerData;
+
+  const resultsList = document.querySelector(".scanner .results ul") as HTMLUListElement;
+  resultsList.innerHTML = "";
+
+  if (game.ship.scanner.data != null) {
+    for (const object of game.ship.scanner.data) {
+      const li = document.createElement("li");
+      li.textContent = `(${object.type}) ${object.name} at ${ui.getReadablePosition(object.position)}`;
+      resultsList.appendChild(li);
+    }
+  }
+}
+
+// Network
+function onShipCourseTargetReached() {
+  log("Ship course target reached!");
+
+  game.ship.course = null;
+  ui.ship.refreshStatus();
+}
+
+function onSetShipPosition(pos: XYZ) {
+  game.ship.position = pos;
+  ui.ship.refreshStatus();
+}
+
+function onShipScannerResults(data: Game.ScannedObject[]) {
+  log(`Scan successful! ${data.length} objects located in a 100 units radius.`);
+
+  game.ship.scanner.data = data;
+  refreshScanner();
+}
+
+// UI events
 function onUseShipScannerClick(event: MouseEvent) {
   event.preventDefault();
 
-  const onScanPlanetsAck: Game.UseShipScannerCallback = (err, planets) => {
+  const onScanPlanetsAck: Game.UseShipScannerCallback = (err) => {
     ui.getButton("use-ship-scanner").disabled = false;
 
     if (err != null) {
@@ -55,16 +121,9 @@ function onUseShipScannerClick(event: MouseEvent) {
       return;
     }
 
-    log(`Scan successful! ${planets.length} objects located in a 100 units radius.`);
-
-    const resultsList = document.querySelector(".scanner .results") as HTMLUListElement;
-    resultsList.innerHTML = "";
-
-    log("Nearby planets (radius 100):");
-    for (const planet of planets) {
-      log(`Planet ID ${planet.id} (name: ${planet.name}) at (${planet.position.x},${planet.position.y},${planet.position.z}).`);
-    }
-    if (planets.length === 0) log("None found!");
+    log("Scan started!");
+    game.ship.scanner.timer = upgrades.ship.scanner.duration[0];
+    refreshScanner();
   };
 
   log("Scanning nearby objects...");

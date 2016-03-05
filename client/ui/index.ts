@@ -11,7 +11,3 @@ export function getValue(name: string) { return (document.querySelector(`input.$
 export function getReadablePosition(pos: XYZ) {
   return `(${pos.x},${pos.y},${pos.z})`;
 }
-
-crew.setup();
-ship.setup();
-planet.setup();

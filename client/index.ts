@@ -24,6 +24,7 @@ export function log(message: string) {
   logElt.scrollTop = 9e9;
 }
 
+let tickIntervalId: NodeJS.Timer;
 
 ui.getInput("server-host").value = window.location.host;
 ui.getButton("connect").addEventListener("click", onConnectClick);
@@ -38,7 +39,7 @@ function onConnectClick(event: MouseEvent) {
   ui.getPane("server").hidden = true;
 
   socket.on("connect", onConnected);
-  socket.on("disconnect", () => { document.write("Whoops, disconnected. Please reload the page."); });
+  socket.on("disconnect", onDisconnected);
 }
 
 function onConnected() {
@@ -47,6 +48,12 @@ function onConnected() {
 
   ui.getButton("create-crew").addEventListener("click", onCreateCrewClick);
   ui.getButton("return-to-crew").addEventListener("click", onReturnToCrewClick);
+}
+
+function onDisconnected() {
+  document.body.innerHTML = "Whoops, disconnected. Please reload the page.";
+  clearInterval(tickIntervalId);
+  tickIntervalId = null;
 }
 
 function onCreateCrewClick(event: MouseEvent) {
@@ -103,28 +110,18 @@ function crewDone() {
   ui.getPane("crew").hidden = false;
   ui.crew.refresh();
 
-  socket.on("shipCourseTargetReached", onShipCourseTargetReached);
-  socket.on("setShipPosition", onSetShipPosition);
-  socket.on("shout", onShout);
+  ui.crew.setup();
+  ui.ship.setup();
+  ui.planet.setup();
 
   if (game.ship != null) {
     ui.getPane("ship").hidden = false;
     ui.ship.refresh();
   }
+
+  tickIntervalId = setInterval(tick, 1000);
 }
 
-function onShout(author: { crewId: string; captainName: string }, text: string) {
-  log(`${author.captainName} (Crew ID: ${author.crewId}) shouts: ${text}`);
-}
-
-function onShipCourseTargetReached() {
-  log("Ship course target reached!");
-
-  game.ship.course = null;
-  ui.ship.refreshStatus();
-}
-
-function onSetShipPosition(pos: XYZ) {
-  game.ship.position = pos;
-  ui.ship.refreshStatus();
+function tick() {
+  ui.ship.tick();
 }

@@ -2,7 +2,11 @@ import game, { log, socket } from "../index";
 import * as ui from "./index";
 
 export function setup() {
+  // Network
   ui.getButton("shout").addEventListener("click", onShoutClick);
+
+  // UI events
+  socket.on("shout", onShout);
 }
 
 export function refresh() {
@@ -32,7 +36,12 @@ export function refreshStatus() {
   }
 }
 
+// Network
+function onShout(author: { crewId: string; captainName: string }, text: string) {
+  log(`${author.captainName} (Crew ID: ${author.crewId}) shouts: ${text}`);
+}
 
+// UI events
 function onShoutClick(event: MouseEvent) {
   event.preventDefault();
 

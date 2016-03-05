@@ -1,0 +1,21 @@
+Crew created! ID is 11, key is ABfs4kjLd1TK69yl.
+Ship ID is 10, key is npfBSm64A0IDcfvZ.
+
+
+- ship: show last scan results and display scan timer
+- store crew id + key in cookie! 
+- scanner upgrade:
+  - show distance to object
+  - sort by distance
+  - set course links
+  - reduce scan duration
+
+- some planets are hostile
+- some ships are hostile
+- you need to scan regularly to have updated info
+- scanner takes 10s
+- planets have various places to visit and do stuff
+- buy interface improvements with resources
+  - 3D view
+  - automatic scan distance calculation
+- MAIN QUEST

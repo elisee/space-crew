@@ -1,15 +1,26 @@
 interface XYZ { x: number; y: number; z: number; }
 
 declare namespace Game {
+  interface ScannedObject {
+    position: XYZ;
+    type: string;
+    name: string;
+  }
+
   interface Ship {
     id: string;
     name: string;
     planetId: string;
     position: XYZ;
 
+    scanner: {
+      timer: number;
+      data: ScannedObject[];
+    };
+
     course?: {
       target: XYZ;
-    }
+    };
   }
 
   interface Crew {
@@ -26,7 +37,7 @@ declare namespace Game {
       weapon: CrewMember;
       mechanic: CrewMember;
       cook: CrewMember;
-    }
+    };
   }
 
   interface CrewMember {
@@ -44,7 +55,7 @@ declare namespace Game {
   }
 
   interface UseShipScannerCallback {
-    (err: string, nearbyPlanets?: Planet[]): void;
+    (err: string): void;
   }
 
   interface SetShipCourseCallback {

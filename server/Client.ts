@@ -2,10 +2,12 @@ import { getNextId } from "./ids";
 import { isValidName } from "./names";
 import { generateKey } from "./keys";
 import { getRandomPosition, getPositionString } from "./positions";
+
+import { io } from "./index";
 import * as crews from "./crews";
 import * as ships from "./ships";
 import * as planets from "./planets";
-import { io } from "./index";
+import * as upgrades from "./upgrades";
 
 export default class Client {
   private crew: ServerGame.Crew;
@@ -28,7 +30,11 @@ export default class Client {
       id: getNextId(),
       name: shipName,
       planetId: null,
-      position: getRandomPosition()
+      position: getRandomPosition(),
+      scanner: {
+        timer: null,
+        data: null
+      }
     };
 
     const crewId = getNextId();
@@ -95,8 +101,10 @@ export default class Client {
   private onUseShipScanner = (callback: Game.UseShipScannerCallback) => {
     const ship = ships.byId[this.crew.pub.location.shipId];
     if (ship == null) { callback("notOnShip"); return; }
+    if (ship.pub.scanner.timer != null) { callback("scanInProgress"); return; }
 
-    callback(null, planets.getNearbyPlanets(ship.pub.position, 50));
+    ship.pub.scanner.timer = upgrades.ship.scanner.duration[0];
+    callback(null);
   };
 
   private onSetShipCourse = (target: XYZ, callback: Game.SetShipCourseCallback) => {
