@@ -1,0 +1,35 @@
+body form, .log {
+  border: 1px solid #ccc;
+  margin-bottom: 0.5em;
+  padding: 0.5em;
+}
+
+body header {
+  text-transform: uppercase;
+  font-weight: bold;
+  color: #666;
+}
+
+body > main > div {
+  margin-bottom: 1em;
+}
+
+body {
+  display: flex;
+}
+
+body > main {
+  flex: 1;
+  display: flex;
+  flex-flow: column;
+  margin-right: 1em;
+}
+
+.log {
+  width: 600px;
+  margin-right: 1em;
+  display: flex;
+  flex-flow: column;
+}
+
+.log textarea { height: 400px; }

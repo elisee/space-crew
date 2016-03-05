@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+  <main>
+    <div class="server">
+      <form>
+        <header>Join server</header>
+        <input type="text" class="server-host" value="127.0.0.1:3000" />
+        <button class="connect">Connect</button>
+      </form>
+    </div>
+
+    <div class="crew" hidden>
+      <form>
+        <header>Create new crew</header>
+        <input type="text" class="ship-name" minlength="2" placeholder="Ship name" />
+        <input type="text" class="captain-name" minlength="2" placeholder="Captain name" />
+        <button class="create-crew">Create crew</button>
+      </form>
+
+      <form>
+        <header>Return to existing crew</header>
+        <input type="text" class="crew-id" placeholder="Crew ID" />
+        <input type="text" class="crew-key" placeholder="Key" />
+        <button class="return-to-crew">Return to crew</button>
+      </form>
+    </div>
+
+    <div class="ship" hidden>
+      <form>
+        <header>Current ship</header>
+        <button class="scan-planets">Scan for nearby planets</button>
+        <button class="land-ship">Land ship</button>
+        <button class="take-off-ship">Take off ship</button>
+        <button class="leave-ship">Leave ship</button>
+      </form>
+
+      <form>
+        <header>Set ship course</header>
+        <input type="text" class="ship-course-target" placeholder="x,y,z">
+        <button class="set-ship-course">Set course</button>
+      </form>
+
+      <form>
+        <header>Enter ship</header>
+        <input type="text" class="ship-id" placeholder="Ship ID" />
+        <input type="text" class="ship-key" placeholder="Key" />
+        <button class="enter-ship">Enter ship</button>
+      </form>
+
+      <form>
+        <header>Shout</header>
+        <input type="text" class="shout-message" placeholder="Message" />
+        <button class="shout">Shout</button>
+      </form>
+    </div>
+  </main>
+
+  <div class="shout" hidden>
+    <form>
+      <header>Shout</header>
+      <input type="text">
+      <button class="shout">Shout</button>
+    </form>
+  </div>
+
+  <div class="log">
+    <header>Captain's log</header>
+    <textarea readonly></textarea>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>

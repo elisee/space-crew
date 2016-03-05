@@ -1,0 +1,26 @@
+{
+  "name": "crewgame",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p server && tsc -p client && browserify client/index.js -o public/index.js",
+    "tsc-watch-server": "tsc -w -p server",
+    "tsc-watch-client": "tsc -w -p client",
+    "watchify-client": "watchify client/index.js -o public/index.js",
+    "start-server": "node server",
+    "start-client": "http-server -p 8000"
+  },
+  "author": "Elisée MAURER <elisee@sparklinlabs.com>",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.4",
+    "socket.io": "^1.4.5"
+  },
+  "devDependencies": {
+    "http-server": "^0.9.0",
+    "socket.io-client": "^1.4.5",
+    "typescript": "^1.8.7",
+    "watchify": "^3.7.0"
+  }
+}
