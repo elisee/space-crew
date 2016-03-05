@@ -47,6 +47,7 @@ export function refreshStatus() {
   let course = "None";
   if (game.ship.course != null) course = `Moving towards ${ui.getReadablePosition(game.ship.course.target)}`;
 
+  (document.querySelector(".ship .name span") as HTMLSpanElement).textContent = game.ship.name;
   (document.querySelector(".ship .location span") as HTMLSpanElement).textContent = location;
   (document.querySelector(".ship .position span") as HTMLSpanElement).textContent = position;
   (document.querySelector(".ship .course span") as HTMLSpanElement).textContent = course;

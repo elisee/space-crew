@@ -7,7 +7,7 @@ export function setup() {
 
   ui.getButton("enter-ship").addEventListener("click", onEnterShipClick);
 
-  if (game.planet != null) {
+  if (game.ship == null && game.planet != null) {
     ui.getPane("planet").hidden = false;
     ui.planet.refresh();
   }
@@ -18,7 +18,10 @@ export function refresh() {
 }
 
 export function refreshStatus() {
-  
+  const position = ui.getReadablePosition(game.planet.position);
+
+  (document.querySelector(".planet .name span") as HTMLSpanElement).textContent = game.planet.name;
+  (document.querySelector(".planet .position span") as HTMLSpanElement).textContent = position;
 }
 
 
