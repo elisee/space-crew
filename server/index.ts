@@ -5,7 +5,7 @@ import * as http from "http";
 import * as express from "express";
 import * as SocketIO from "socket.io";
 
-import * as storage from "./storage";
+import * as cluster from "./cluster";
 import * as ships from "./ships";
 import * as planets from "./planets";
 import Client from "./Client";
@@ -21,7 +21,7 @@ export let time = 0;
 app.use(express.static("public"));
 server.listen(port);
 
-if (!storage.load()) planets.generatePlanets();
+if (!cluster.load()) cluster.generate();
 
 process.on("SIGINT", onExit);
 
@@ -41,6 +41,6 @@ function onExit() {
   tickInterval = null;
 
   console.log("Saving...");
-  storage.save();
+  cluster.save();
   process.exit(0);
 }

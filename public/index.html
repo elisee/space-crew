@@ -50,12 +50,6 @@
         <div class="location">Location: <span></span></div>
         <div class="members">Members: <ul></ul></div>
       </form>
-      
-      <form>
-        <header>Shout</header>
-        <input type="text" class="shout-message" placeholder="Message" />
-        <button class="shout">Shout</button>
-      </form>
     </div>
 
     <div class="ship" hidden>
@@ -112,27 +106,55 @@
           </tr>
         </table>
       </form>
+    </div>
+    <div class="spaceport" hidden>
+      <header>Spaceport</header>
       <form>
-        <header>Spaceport</header>
+        <header>List of ships</header>
         <div class="ship-list">
           <div class="count">There are <span></span> ships parked.</div>
-          <ul></ul>
+          <table>
+            <thead>
+              <tr>
+                <th>Ship name</th>
+                <th>Model</th>
+                <th>Key</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
-        <div class="exit-ship">
-          <button>Exit ship</button>
-        </div>
-        <div class="enter-ship">
-          <input type="text" class="ship-id" placeholder="Ship ID" />
-          <input type="text" class="ship-key" placeholder="Key" />
-          <button>Enter ship</button>
-        </div>
+      </form>
+
+      <form class="exit-ship">
+        <header>Exit ship</header>
+        <button>Exit ship</button>
+      </form>
+
+      <form class="enter-ship">
+        <header>Enter ship</header>
+        <div>Ship: <select class="ship-id"></select></div>
+        <div>Key: <input type="text" class="ship-key"></div>
+        <button>Enter ship</button>
       </form>
     </div>
   </main>
 
-  <div class="log">
-    <header>Captain's log</header>
-    <textarea readonly></textarea>
+  <div class="sidebar">
+    <form class="log">
+      <header>Captain's log</header>
+      <textarea readonly></textarea>
+    </form>
+
+    <form class="shout" hidden>
+      <header>Shout</header>
+      <input type="text" class="shout-message" placeholder="Message" />
+      <button>Shout</button>
+    </form>
+    <form class="nearby-crews" hidden>
+      <header>Nearby crews</header>
+      <ul></ul>
+    </form>
   </div>
 
   <script src="index.js"></script>

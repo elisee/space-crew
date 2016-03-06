@@ -3,27 +3,11 @@ import * as planets from "./planets";
 import { isSamePosition, moveTowards } from "./positions";
 
 export const byId: { [shipId: string]: ServerGame.Ship; } = {};
-export const byPlanetId: { [planetId: string]: ServerGame.Ship[]; } = {};
 export const all: ServerGame.Ship[] = [];
 
 export function register(ship: ServerGame.Ship) {
   all.push(ship);
-  byId[ship.pub.id] = ship;
-  if (ship.pub.planetId != null) addToPlanet(ship);
-}
-
-export function addToPlanet(ship: ServerGame.Ship) {
-  if (ship.pub.planetId == null) throw new Error("ships.addToPlanet called with null ship planetId");
-  let planetShips = byPlanetId[ship.pub.planetId];
-  if (planetShips == null) planetShips = byPlanetId[ship.pub.planetId] = [];
-  planetShips.push(ship);
-}
-
-export function removeFromPlanet(ship: ServerGame.Ship) {
-  if (ship.pub.planetId == null) throw new Error("ships.addToPlanet called with null ship planetId");
-  const planetShips = byPlanetId[ship.pub.planetId];
-  planetShips.splice(planetShips.indexOf(ship), 1);
-  ship.pub.planetId = null;
+  byId[ship.pub.info.id] = ship;
 }
 
 export function tick() {
@@ -36,10 +20,10 @@ export function tick() {
 function advanceCourse(ship: ServerGame.Ship) {
   if (isSamePosition(ship.pub.position, ship.pub.course.target)) {
     ship.pub.course = null;
-    io.in(`ship:${ship.pub.id}`).emit("ship.courseTargetReached");
+    io.in(`ship:${ship.pub.info.id}`).emit("ship.courseTargetReached");
   } else {
     moveTowards(ship.pub.position, ship.pub.course.target);
-    io.in(`ship:${ship.pub.id}`).emit("ship.setPosition", ship.pub.position);
+    io.in(`ship:${ship.pub.info.id}`).emit("ship.setPosition", ship.pub.position);
   }
 }
 
@@ -58,6 +42,6 @@ function runScan(ship: ServerGame.Ship) {
       });
     }
 
-    io.in(`ship:${ship.pub.id}`).emit("ship.scannerResults", nearbyObjects);
+    io.in(`ship:${ship.pub.info.id}`).emit("ship.scannerResults", nearbyObjects);
   }
 }

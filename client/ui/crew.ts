@@ -3,11 +3,14 @@ import * as ui from "./index";
 
 export function setup() {
   // Network
-  ui.getButton("shout").addEventListener("click", onShoutClick);
+  document.querySelector(".shout button").addEventListener("click", onShoutClick);
 
   // UI events
   socket.on("shout", onShout);
 }
+
+export function show() { ui.getPane("crew").hidden = false; }
+export function hide() { ui.getPane("crew").hidden = true; }
 
 export function refresh() {
   refreshStatus();
@@ -15,7 +18,7 @@ export function refresh() {
 
 export function refreshStatus() {
   let location = "";
-  if (game.ship != null) location = `Onboard ship ${game.ship.name} (ID: ${game.ship.id}).`;
+  if (game.ship != null) location = `Onboard ship ${game.ship.info.name} (ID: ${game.ship.info.id}).`;
   else location = `On planet ${game.planet.name} (ID: ${game.planet.id}).`;
 
   (document.querySelector(".crew .location span") as HTMLSpanElement).textContent = location;
@@ -37,8 +40,8 @@ export function refreshStatus() {
 }
 
 // Network
-function onShout(author: { crewId: string; captainName: string }, text: string) {
-  log(`${author.captainName} (Crew ID: ${author.crewId}) shouts: ${text}`);
+function onShout(crew: Game.CrewInfo, text: string) {
+  log(`${crew.captainName} (Crew ID: ${crew.id}) shouts: ${text}`);
 }
 
 // UI events

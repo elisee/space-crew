@@ -1,11 +1,11 @@
 import * as ui from "./index";
-import game, { log, socket } from "../index";
+import game, { setupPlace, log, socket } from "../index";
 
 import * as upgrades from "../../server/upgrades";
 
 export function setup() {
   if (game.ship != null) {
-    ui.getPane("ship").hidden = false;
+    show();
     refresh();
   }
 
@@ -21,8 +21,10 @@ export function setup() {
   ui.getButton("use-ship-scanner").addEventListener("click", onUseScannerClick);
 
   ui.getButton("set-ship-course").addEventListener("click", onSetCourseClick);
-
 }
+
+export function show() { ui.getPane("ship").hidden = false; }
+export function hide() { ui.getPane("ship").hidden = true; }
 
 export function tick() {
   if (game.ship == null) return;
@@ -48,7 +50,7 @@ export function refreshStatus() {
   let course = "None";
   if (game.ship.course != null) course = `Moving towards ${ui.getReadablePosition(game.ship.course.target)}`;
 
-  (document.querySelector(".ship .name span") as HTMLSpanElement).textContent = game.ship.name;
+  (document.querySelector(".ship .name span") as HTMLSpanElement).textContent = game.ship.info.name;
   (document.querySelector(".ship .location span") as HTMLSpanElement).textContent = location;
   (document.querySelector(".ship .position span") as HTMLSpanElement).textContent = position;
   (document.querySelector(".ship .course span") as HTMLSpanElement).textContent = course;
@@ -162,7 +164,7 @@ function onSetCourseClick(event: MouseEvent) {
 function onLandClick(event: MouseEvent) {
   event.preventDefault();
 
-  const onLandShipAck: Game.LandShipCallback = (err, planet) => {
+  const onLandShipAck: Game.LandShipCallback = (err, planet, spaceport) => {
     if (err != null) {
       log(`Error while landing ship: ${err}.`);
       return;
@@ -171,11 +173,17 @@ function onLandClick(event: MouseEvent) {
     log("Ship has landed!");
 
     game.planet = planet;
+    game.place = spaceport;
+    setupPlace();
+
     game.ship.planetId = planet.id;
     ui.ship.refresh();
 
-    ui.getPane("planet").hidden = false;
+    ui.planet.show();
     ui.planet.refresh();
+
+    ui.spaceport.show();
+    ui.spaceport.refresh();
   };
 
   socket.emit("ship.land", onLandShipAck);
@@ -193,10 +201,14 @@ function onTakeOffClick(event: MouseEvent) {
     log("Ship has taken off!");
 
     game.planet = null;
+    game.place = null;
+    setupPlace();
+
     game.ship.planetId = null;
     ui.ship.refresh();
 
-    ui.getPane("planet").hidden = true;
+    ui.planet.hide();
+    ui.spaceport.hide();
   };
 
   socket.emit("ship.takeOff", onTakeOffShipAck);

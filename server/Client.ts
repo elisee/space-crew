@@ -7,6 +7,7 @@ import { io } from "./index";
 import * as crews from "./crews";
 import * as ships from "./ships";
 import * as planets from "./planets";
+import * as spaceports from "./spaceports";
 import * as upgrades from "./upgrades";
 
 export default class Client {
@@ -40,8 +41,12 @@ export default class Client {
     if (!isValidName(captainName)) { callback("invalidCaptainName"); return; }
 
     const ship: Game.Ship = {
-      id: getNextId(),
-      name: shipName,
+      info: {
+        id: getNextId(),
+        model: "CARG-0",
+        name: shipName,
+      },
+      health: 1000,
       planetId: null,
       position: getRandomPosition(),
       scanner: {
@@ -59,29 +64,30 @@ export default class Client {
     };
 
     const crew: Game.Crew = {
-      id: crewId,
-      location: { shipId: ship.id },
+      info: { id: crewId, captainName },
+      credits: 50,
+      location: { shipId: ship.info.id },
       members: { captain, pilot: null, weapon: null, mechanic: null, cook: null }
     };
 
-    const serverCrew: ServerGame.Crew = { pub: crew, priv: { key: generateKey() } };
+    const serverCrew: ServerGame.Crew = { pub: crew, key: generateKey() };
     crews.register(serverCrew);
 
-    this.log(`Captain ${captain.name} started a crew aboard ship ${ship.name}.`);
+    this.log(`Captain ${captain.name} started a crew aboard ship ${ship.info.name}.`);
 
     this.crew = serverCrew;
 
-    const serverShip: ServerGame.Ship = { pub: ship, crew: serverCrew, priv: { key: generateKey() } };
+    const serverShip: ServerGame.Ship = { pub: ship, crew: serverCrew, key: generateKey() };
     ships.register(serverShip);
 
     this.crewDone();
-    callback(null, { crew, ship, crewKey: serverCrew.priv.key, shipKey: serverShip.priv.key });
+    callback(null, { crew, ship, crewKey: serverCrew.key, shipKey: serverShip.key });
   };
 
   private onReturnToCrew = (crewId: string, key: string, callback: Game.ReturnToCrewCallback) => {
     const serverCrew = crews.byId[crewId];
     if (serverCrew == null) { callback("noSuchCrew"); return; }
-    if (serverCrew.priv.key !== key) { callback("invalidKey"); return; }
+    if (serverCrew.key !== key) { callback("invalidKey"); return; }
 
     this.log(`${serverCrew.pub.members.captain.name} returning to crew.`);
 
@@ -89,16 +95,19 @@ export default class Client {
 
     const serverShip = ships.byId[serverCrew.pub.location.shipId];
     const ship = serverShip != null ? serverShip.pub : null;
-    let planet: Game.Planet;
 
-    if (ship != null) {
-      if (ship.planetId != null) planet = planets.byId[ship.planetId].pub;
-    } else {
+    let planet: Game.Planet;
+    let place: Game.Place;
+
+    if (this.crew.pub.location.planet != null) {
       planet = planets.byId[this.crew.pub.location.planet.id].pub;
+      switch (this.crew.pub.location.planet.place) {
+        case "spaceport": place = spaceports.byPlanetId[planet.id].pub; break;
+      }
     }
 
     this.crewDone();
-    callback(null, { crew: serverCrew.pub, ship, planet });
+    callback(null, { crew: serverCrew.pub, ship, planet, place });
   };
 
   private crewDone() {
@@ -157,14 +166,20 @@ export default class Client {
     if (planet == null) { callback("shipNotAbovePlanet"); return; }
 
     ship.pub.planetId = planet.pub.id;
-    ships.addToPlanet(ship);
+    this.crew.pub.location.planet = { id: ship.pub.planetId, place: "spaceport" };
 
     this.socket.join(`planet:${ship.pub.planetId}`);
+
+    spaceports.addCrew(this.crew);
+    spaceports.addShip(ship);
+    const spaceport = spaceports.byPlanetId[ship.pub.planetId];
+    io.in(`planet:${ship.pub.planetId}:spaceport`).emit("addShip", ship.pub.info);
+    io.in(`planet:${ship.pub.planetId}:spaceport`).emit("addCrew", this.crew.pub.info);
     this.socket.join(`planet:${ship.pub.planetId}:spaceport`);
 
     this.log(`Landed ship on ${planet.pub.name}.`);
 
-    callback(null, planet.pub);
+    callback(null, planet.pub, spaceport.pub);
   };
 
   private onTakeOffShip = (callback: Game.TakeOffShipCallback) => {
@@ -175,13 +190,18 @@ export default class Client {
     this.socket.leave(`planet:${ship.pub.planetId}`);
     this.socket.leave(`planet:${ship.pub.planetId}:spaceport`);
 
+    spaceports.removeCrew(this.crew);
+    spaceports.removeShip(ship);
+    io.in(`planet:${ship.pub.planetId}:spaceport`).emit("removeCrew", this.crew.pub.info.id);
+    io.in(`planet:${ship.pub.planetId}:spaceport`).emit("removeShip", ship.pub.info.id);
+
     this.log(`Took off from ${planets.byId[ship.pub.planetId].pub.name}.`);
 
-    ships.removeFromPlanet(ship);
+    ship.pub.planetId = null;
+    this.crew.pub.location.planet = null;
 
     callback(null);
   };
-
 
   private onSpaceportExitShip = (callback: Game.SpaceportExitShipCallback) => {
     const ship = ships.byId[this.crew.pub.location.shipId];
@@ -189,10 +209,9 @@ export default class Client {
     if (ship.pub.planetId == null) { callback("shipNotOnPlanet"); return; }
 
     this.crew.pub.location.shipId = null;
-    this.crew.pub.location.planet = { id: ship.pub.planetId, place: "spaceport" };
 
     ship.crew = null;
-    this.socket.leave(`ship:${ship.pub.id}`);
+    this.socket.leave(`ship:${ship.pub.info.id}`);
 
     this.log(`Exiting ship.`);
 
@@ -208,18 +227,21 @@ export default class Client {
     if (ship == null) { callback("noSuchShip"); return; }
     if (ship.pub.planetId !== crewLocation.planet.id) { callback("shipNotOnPlanet"); return; }
     if (ship.crew != null) { callback("shipFull"); return; }
-    if (ship.priv.key !== key) { callback("invalidKey"); return; }
+    if (ship.key !== key) { callback("invalidKey"); return; }
 
     ship.crew = this.crew;
 
-    crewLocation.planet = null;
-    crewLocation.shipId = ship.pub.id;
+    crewLocation.shipId = ship.pub.info.id;
 
-    this.socket.join(`ship:${ship.pub.id}`);
+    this.socket.join(`ship:${ship.pub.info.id}`);
 
-    this.log(`Entering ship ${ship.pub.name}.`);
+    this.log(`Entering ship ${ship.pub.info.name}.`);
 
     callback(null, ship.pub);
+  };
+
+  private onPlanetGoToPlace = (place: string) => {
+    // TODO: ...
   };
 
   private onShout = (message: string, callback: Game.ShoutCallback) => {
@@ -229,10 +251,10 @@ export default class Client {
     }
 
     const location = this.crew.pub.location;
-    const room = (location.shipId != null) ? `ship:${location.shipId}` : `planet:${location.planet.id}:${location.planet.place}`;
+    const room = (location.planet != null) ? `planet:${location.planet.id}:${location.planet.place}` : `ship:${location.shipId}`;
 
     this.log(`Shouted "${message}" in ${room}.`);
-    io.in(room).emit("shout", { crewId: this.crew.pub.id, captainName: this.crew.pub.members.captain.name }, message);
+    io.in(room).emit("shout", this.crew.pub.info, message);
     callback(null);
   };
 }

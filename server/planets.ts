@@ -1,6 +1,8 @@
 import { getNextId } from "./ids";
 import { generatePlanetName } from "./names";
-import { getRandomPosition, getPositionString, distanceBetween } from "./positions";
+import { getPositionString, distanceBetween } from "./positions";
+
+import * as spaceports from "./spaceports";
 
 export const byId: { [planetId: string]: ServerGame.Planet; } = {};
 export const byPosition: { [position: string]: ServerGame.Planet; } = {};
@@ -12,25 +14,20 @@ export function register(planet: ServerGame.Planet) {
   byPosition[getPositionString(planet.pub.position)] = planet;
 }
 
-export function generatePlanets() {
-  for (let i = 0; i < 10; i++) {
-    let position: XYZ;
-    let positionString: string;
-    while (true) {
-      position = getRandomPosition();
-      positionString = getPositionString(position);
-      if (byPosition[positionString] == null) break;
-    }
+export function createPlanet(position: XYZ) {
+  const planet: Game.Planet = {
+    id: getNextId(),
+    name: generatePlanetName(),
+    position
+  };
 
-    const planet: Game.Planet = {
-      id: getNextId(),
-      name: generatePlanetName(),
-      position
-    };
+  const spaceport = spaceports.create(planet.id);
 
-    const serverPlanet: ServerGame.Planet = { pub: planet, priv: {} };
-    register(serverPlanet);
-  }
+  const serverPlanet: ServerGame.Planet = {
+    pub: planet,
+    spaceport
+  };
+  register(serverPlanet);
 }
 
 export function getNearbyPlanets(position: XYZ, radius: number) {

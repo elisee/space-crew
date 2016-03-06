@@ -7,11 +7,17 @@ import * as ui from "./ui";
 const game: {
   crew: Game.Crew;
   ship: Game.Ship;
+
   planet: Game.Planet;
+  place: Game.Place;
+  nearbyCrewsById: { [crewId: string]: Game.CrewInfo; };
 } = {
   crew: null,
   ship: null,
-  planet: null
+
+  planet: null,
+  place: null,
+  nearbyCrewsById: {}
 };
 export default game;
 
@@ -40,12 +46,14 @@ function onConnectClick(event: MouseEvent) {
 
   socket.on("connect", onConnected);
   socket.on("disconnect", onDisconnected);
+
+  socket.on("addCrew", onAddCrew);
+  socket.on("removeCrew", onRemoveCrew);
 }
 
 function onConnected() {
   log("Connected!");
-  ui.getPane("log-in").hidden = false;
-
+  ui.login.show();
   ui.login.setup();
 }
 
@@ -55,13 +63,44 @@ function onDisconnected() {
   tickIntervalId = null;
 }
 
+function onAddCrew(crewInfo: Game.CrewInfo) {
+  game.place.crews.push(crewInfo);
+  game.nearbyCrewsById[crewInfo.id] = crewInfo;
+  ui.sidebar.refreshCrewsList();
+}
+
+function onRemoveCrew(crewId: string) {
+  const crewInfo = game.nearbyCrewsById[crewId];
+  game.place.crews.splice(game.place.crews.indexOf(crewInfo), 1);
+  delete game.nearbyCrewsById[crewInfo.id];
+  ui.sidebar.refreshCrewsList();
+}
+
+export function setupPlace() {
+  game.nearbyCrewsById = {};
+
+  if (game.place != null) {
+    for (const crewInfo of game.place.crews) {
+      game.nearbyCrewsById[crewInfo.id] = crewInfo;
+    }
+  }
+
+  ui.sidebar.refreshCrewsList();
+}
+
 export function loginDone() {
-  ui.getPane("crew").hidden = false;
+  setupPlace();
+
+  ui.crew.show();
   ui.crew.refresh();
 
   ui.crew.setup();
   ui.ship.setup();
+
   ui.planet.setup();
+  ui.spaceport.setup();
+
+  ui.sidebar.setup();
 
   tickIntervalId = setInterval(tick, 1000);
 }
